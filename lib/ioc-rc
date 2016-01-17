@@ -80,7 +80,10 @@ __start_jail () {
         __set_jail_prop allow_mount=1 $fulluuid
         __set_jail_prop enforce_statfs=1 $fulluuid
         __set_jail_prop allow_mount_zfs=1 $fulluuid
-        zfs set jailed=on ${pool}/$jzfs_dataset
+        local jzfs_dataset_single
+        for jzfs_dataset_single in $(__expand_jail_zfs_datasets $pool $jzfs_dataset); do
+            zfs set jailed=on $jzfs_dataset_single
+        done
     fi
 
     if [ $vnet == "on" ] || [ $vnet == "-" ] ; then
@@ -135,7 +138,10 @@ __start_jail () {
     fi
 
     if [ $jzfs == "on" ] ; then
-        zfs jail ioc-${fulluuid} ${pool}/$jzfs_dataset
+        local jzfs_dataset_single
+        for jzfs_dataset_single in $(__expand_jail_zfs_datasets $pool $jzfs_dataset); do
+            zfs jail ioc-${fulluuid} $jzfs_dataset_single
+        done
     fi
 
     __resolv_conf ${fulluuid} > ${jail_path}/root/etc/resolv.conf

@@ -231,9 +231,15 @@ __create_jail () {
         echo $uuid
     fi
 
-    zfs create -o compression=lz4 ${pool}/$jail_zfs_dataset
-    zfs set mountpoint=none ${pool}/$jail_zfs_dataset
-    zfs set jailed=on ${pool}/$jail_zfs_dataset
+    local _zfs_fslist='!'$(zfs list -Ho name | tr -s '[:space:]' '!')
+    local jzfs_dataset_single
+    for jzfs_dataset_single in $(__expand_jail_zfs_datasets $pool $jzfs_dataset); do
+        if ! echo "$_zfs_fslist" | grep "!${jzfs_dataset_single}!" >/dev/null ; then
+            zfs create -o compression=lz4 $jzfs_dataset_single
+            zfs set mountpoint=none $jzfs_dataset_single
+        fi
+        zfs set jailed=on $jzfs_dataset_single
+    done
 
     # configure the jail mountpoint
     __hack88_mount ${uuid}
@@ -416,4 +422,33 @@ __check_filesystems () {
     if [ ${_missing} -gt 0 ] ; then
         zfs mount -a
     fi
+}
+
+# Return list of fully-qualified (including pool name)
+# datasets that belong to the jail
+__expand_jail_zfs_datasets () {
+    local _pool="$1"
+    local _dataset_prop="$2"
+    local _poollist=/$(zpool list -Ho name | tr -s '[:space:]' /)
+
+    if [ -z "$_dataset_prop" ]; then
+        return
+    fi
+    if [ -z "$_pool" ]; then
+        _pool="$pool"
+    fi
+
+    for ds in $(echo $_dataset_prop) ; do
+        local dspool_=$(echo $ds | sed 's#/.*##')
+        if echo $_poollist | grep "/${dspool_}/" >/dev/null; then
+            # Dataset name including pool; pass it through
+            echo $dspool_
+        elif [ -z "$dspool_" ]; then
+            # Begins with /; prepend $pool
+            echo "${_pool}$ds"
+        else
+            # Relative to $pool
+            echo "${_pool}/$ds"
+        fi
+    done
 }

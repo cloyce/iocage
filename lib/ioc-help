@@ -706,10 +706,11 @@ PROPERTIES
     Default: off
     Source: local
 
-  jail_zfs_dataset=iocage/jails/UUID/root/data | zfs_filesystem
+  jail_zfs_dataset="zfs_filesystem ..."
 
-    This is the dataset to be jailed and fully handed over to a jail. Takes
-    the ZFS filesystem name without pool name.
+    This is a list of datasets to be jailed and fully handed over to a jail.
+    Takes a ZFS filesystem name; if the pool name is not included it will be
+    created on the ZFS pool that iocage uses.
     NOTE: only valid if jail_zfs=on. By default the mountpoint is set to none,
     to mount this dataset set its mountpoint inside the jail i.e. "zfs set
     mountpoint=/data full-dataset-name" and issue "mount -a".
